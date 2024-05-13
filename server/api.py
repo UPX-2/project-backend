@@ -21,14 +21,14 @@ class ServerApi:
 
         @self.app.route('/create_user', methods=['POST'])
         def create_user():
-            # Obtendo os dados do formulário enviado
-            
-            complete_name = request.form.get('complete_name')
-            email = request.form.get('email')
-            password_hash = request.form.get('password')
+            # Obtendo os dados enviados como JSON
+            data = request.json
+            complete_name = data.get('complete_name')
+            email = data.get('email')
+            password_hash = data.get('password')
             password_hash = self.encrypt_password(password_hash)
-            access_token = request.form.get('access_token')
-            refresh_token = request.form.get('refresh_token')
+            access_token = data.get('access_token')
+            refresh_token = data.get('refresh_token')
 
             try:
                 # Inserindo os dados na tabela USERS
@@ -46,9 +46,10 @@ class ServerApi:
 
         @self.app.route('/login', methods=['POST'])
         def login():
-            # Obtendo os dados do formulário enviado
-            email = request.form.get('email')
-            password = request.form.get('password')
+            # Obtendo os dados enviados como JSON
+            data = request.json
+            email = data.get('email')
+            password = data.get('password')
 
             try:
                 # Obtendo os dados do usuário do banco de dados
@@ -64,7 +65,7 @@ class ServerApi:
                     # Verificando se a senha fornecida corresponde à senha criptografada armazenada
                     if bcrypt.checkpw(password.encode('utf-8'), senha_criptografada_armazenada.encode('utf-8')):
                         cursor.close()
-                        return 'Login bem-sucedido!'
+                        return jsonify({'token': 'token_fixo_qualquer'})
                     else:
                         cursor.close()
                         return 'Credenciais inválidas.'
