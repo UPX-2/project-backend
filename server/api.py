@@ -27,8 +27,10 @@ class ServerApi:
             email = data.get('email')
             password_hash = data.get('password')
             password_hash = self.encrypt_password(password_hash)
-            access_token = data.get('access_token')
-            refresh_token = data.get('refresh_token')
+            access_token = "asdasdasdasdasd"
+            refresh_token = "dadasdasdasd"
+
+            print(complete_name)
 
             try:
                 # Inserindo os dados na tabela USERS
@@ -40,7 +42,7 @@ class ServerApi:
                 self.connector.connection.commit()
                 cursor.close()
                 
-                return 'Usuário criado com sucesso!'
+                return jsonify({'return': 'success'})
             except Exception  as err:
                 return f'Erro ao criar usuário: {err}'
 
