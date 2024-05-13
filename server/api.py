@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from database import *
 import bcrypt
 
@@ -7,6 +8,7 @@ class ServerApi:
         self.host = host
         self.port = port
         self.app = Flask(__name__)
+        CORS(self.app)  # Permitindo solicitações de qualquer origem
         self.connector = MySQLConnector()
 
         self.connector.connect()
