@@ -69,9 +69,16 @@ class ServerApi:
                             'email': user[0],
                             'nome_completo': user[3],
                         }
-                        cursor.close()
+                        # cursor.close()
 
                         token = jwt.encode(data_token, self.secret_key, algorithm='HS256')
+
+                        query = "UPDATE USERS SET ACCESS_TOKEN = %s WHERE ID = %s"
+                        params = (token, user[2])
+                        
+                        cursor.execute(query, params)
+                        self.connector.connection.commit()
+
                         return jsonify({'token': token})
                     else:
                         cursor.close()
@@ -81,6 +88,33 @@ class ServerApi:
                     return jsonify({'error': 'Usuário não encontrado.'}), 404
             except Exception as err:
                 return jsonify({'error': f'Erro ao fazer login: {err}'}), 500
+
+         # METAS ===================================================================================================================================================
+        @self.app.route('/metrics', methods=['POST'])
+        def create_metrics():
+            # Obtendo dados do formulário de METAS
+
+            data = request.json
+            decode_token = jwt.decode(data.get('access_token'), self.secret_key, algorithms=['HS256'])
+            user_id = decode_token.get('id')
+            metric_name = data.get('metric_name')
+            unit_measurement = data.get('unit_measurement')
+
+            #inserindo os dados na tabela METRICS
+            try:
+                cursor = self.connector.connection.cursor()
+                query = ("INSERT INTO METRICS (USER_ID, METRIC_NAME, UNIT_MEASUREMENT) "
+                         "VALUES (%s, %s, %s)")
+                data = (user_id, metric_name, unit_measurement)
+                cursor.execute(query, data)
+                self.connector.connection.commit()
+                cursor.close()
+                resposta = {"status": "success", "metric_name": metric_name, "unit_measurement": unit_measurement}
+
+                return jsonify(resposta)
+            
+            except Exception  as err:
+                return jsonify({'error': f'Erro ao criar métrica: {err}'}), 500
 
     def load(self):
         self.app.run(host=self.host, port=self.port)
