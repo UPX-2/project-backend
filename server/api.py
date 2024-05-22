@@ -89,7 +89,7 @@ class ServerApi:
             except Exception as err:
                 return jsonify({'error': f'Erro ao fazer login: {err}'}), 500
 
-         # METAS ===================================================================================================================================================
+        # METAS ===================================================================================================================================================
         @self.app.route('/metrics', methods=['POST'])
         def create_metrics():
             # Obtendo dados do formulário de METAS
@@ -151,6 +151,66 @@ class ServerApi:
                 return jsonify({'error': 'Token inválido.'}), 401
             except Exception as err:
                 return jsonify({'error': f'Erro ao obter métricas: {err}'}), 500
+
+        # REGISTROS METAS ===================================================================================================================================================
+        @self.app.route('/metrics_input', methods=['POST'])
+        def create_input_metric():
+            data = request.json
+            decode_token = jwt.decode(data.get('access_token'), self.secret_key, algorithms=['HS256'])
+            user_id = decode_token.get('id')
+            metric_id = data.get('metric_id')
+            input_value = data.get('input_value')
+
+            try:
+                cursor = self.connector.connection.cursor()
+                query = ("INSERT INTO METRICS_INPUT (USER_ID, METRIC_ID, INPUT_VALUE) "
+                         "VALUES (%s, %s, %s)")
+                data = (user_id, metric_id, input_value)
+                cursor.execute(query, data)
+                self.connector.connection.commit()
+                cursor.close()
+                resposta = {"status": "success"}
+
+                return jsonify(resposta)
+            
+            except Exception  as err:
+                return jsonify({'error': f'Erro ao criar entrada: {err}'}), 500
+
+        # # Rota para obter métricas
+        # @self.app.route('/metrics', methods=['GET'])
+        # def get_metrics():
+        #     # Obtendo o token de acesso
+        #     data = request.json
+        #     access_token = data.get('access_token')
+        #     if not access_token:
+        #         return jsonify({'error': 'Access token não fornecido.'}), 400
+
+        #     try:
+        #         decode_token = jwt.decode(access_token, self.secret_key, algorithms=['HS256'])
+        #         user_id = decode_token.get('id')
+        #         cursor = self.connector.connection.cursor()
+        #         query = "SELECT ID, METRIC_NAME, UNIT_MEASUREMENT FROM METRICS WHERE USER_ID = %s"
+        #         cursor.execute(query, (user_id,))
+        #         metrics = cursor.fetchall()
+        #         cursor.close()
+
+        #         # Formatando o resultado em JSON
+        #         result = []
+        #         for metric in metrics:
+        #             result.append({
+        #                 'id': metric[0],
+        #                 'metric_name': metric[1],
+        #                 'unit_measurement': metric[2]
+        #             })
+                
+        #         return jsonify(result)
+            
+        #     except jwt.ExpiredSignatureError:
+        #         return jsonify({'error': 'Token expirou.'}), 401
+        #     except jwt.InvalidTokenError:
+        #         return jsonify({'error': 'Token inválido.'}), 401
+        #     except Exception as err:
+        #         return jsonify({'error': f'Erro ao obter métricas: {err}'}), 500
 
     def load(self):
         self.app.run(host=self.host, port=self.port)
