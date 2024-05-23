@@ -120,8 +120,7 @@ class ServerApi:
         @self.app.route('/metrics', methods=['GET'])
         def get_metrics():
             # Obtendo o token de acesso
-            data = request.json
-            access_token = data.get('access_token')
+            access_token = request.headers.get('Authorization')
             if not access_token:
                 return jsonify({'error': 'Access token não fornecido.'}), 400
 
@@ -182,7 +181,7 @@ class ServerApi:
             access_token = request.headers.get('Authorization')
             if not access_token:
                 return jsonify({'error': 'Access token não fornecido.'}), 400
-            print(access_token)
+
             try:
 
                 decode_token = jwt.decode(access_token, self.secret_key, algorithms=['HS256'])
