@@ -179,29 +179,36 @@ class ServerApi:
         # Rota para obter entradas
         @self.app.route('/metrics_input', methods=['GET'])
         def get_input_metric():
-            data = request.json
-            access_token = data.get('access_token')
+            access_token = request.headers.get('Authorization')
             if not access_token:
                 return jsonify({'error': 'Access token não fornecido.'}), 400
-
+            print(access_token)
             try:
+
                 decode_token = jwt.decode(access_token, self.secret_key, algorithms=['HS256'])
                 user_id = decode_token.get('id')
-                metric_id = data.get('metric_id')
+                metric_id = request.args.get('metric_id')
+                if not metric_id:
+                    return jsonify({'error': 'metric_id não fornecido.'}), 400
+
                 cursor = self.connector.connection.cursor()
-                query = "SELECT INPUT_VALUE, CREATE_AT FROM METRICS_INPUT WHERE USER_ID = %s AND METRIC_ID = %s"
-                cursor.execute(query, (user_id,metric_id))
+                query = """
+                    SELECT DATE_FORMAT(CREATE_AT, '%Y-%m') AS month, SUM(INPUT_VALUE) AS total_value 
+                    FROM METRICS_INPUT 
+                    WHERE USER_ID = %s AND METRIC_ID = %s AND CREATE_AT >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) 
+                    GROUP BY DATE_FORMAT(CREATE_AT, '%Y-%m') 
+                    ORDER BY DATE_FORMAT(CREATE_AT, '%Y-%m');
+                """
+                cursor.execute(query, (user_id, metric_id))
                 metrics = cursor.fetchall()
                 cursor.close()
 
                 # Formatando o resultado em JSON
-                result = []
-                for metric in metrics:
-                    result.append({
-                        'value': metric[0],
-                        'date': metric[1]
-                    })
-                
+                result = [metric[1] for metric in metrics]
+                while len(result) < 6:
+                    result.insert(0, "0")
+                result = result[:6]
+
                 return jsonify(result)
             
             except jwt.ExpiredSignatureError:
